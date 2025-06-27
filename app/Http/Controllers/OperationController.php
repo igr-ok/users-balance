@@ -33,6 +33,12 @@ class OperationController extends Controller
         
         $operations = $query->paginate(10);
 
-        return response()->json($operations);
+        return response()->json([
+            'operations' => $operations,
+            'user' => [
+                'name' => $user->name,
+                'email' => $user->email,
+            ]            
+        ]);
     }
 }

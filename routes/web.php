@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\OperationController;
@@ -35,9 +35,9 @@ Route::middleware('web')->group(function () {
 
 
 Route::prefix('api')->middleware('api')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-    Route::post('/register', [AuthController::class, 'register']);
+    Route::post('/login', [AuthenticatedSessionController::class, 'store'])->name('login');
+    Route::post('/logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
+    //Route::post('/register', [AuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::get('/user', function () {

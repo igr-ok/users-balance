@@ -1,14 +1,6 @@
 <template>
   <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
-      <div>
-        <h5>Добро пожаловать, {{ user.name }} ({{ user.email }})</h5>
-      </div>
-      <form method="POST" action="/logout">
-        <input type="hidden" name="_token" :value="csrfToken">
-        <button class="btn btn-outline-danger btn-sm" type="submit">Выйти</button>
-      </form>
-    </div>
+    <UserHeader :user="user" :csrfToken="csrfToken" />
 
     <h2>Текущий баланс: {{ balance }} ₽</h2>
 
@@ -34,41 +26,40 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'DashboardPage',
-  data() {
-    return {
-      balance: 0,
-      operations: [],
-      user: {
-        name: '',
-        email: ''
-      },
-      csrfToken: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-      interval: null
-    }
-  },
-  methods: {
-    fetchData() {
-      fetch('/dashboard-data')
-        .then(res => res.json())
-        .then(data => {
-          this.user = data.user
-          this.balance = data.balance
-          this.operations = data.operations
-        })
-    },
-    formatDate(date) {
-      return new Date(date).toLocaleString()
-    }
-  },
-  mounted() {
-    this.fetchData()
-    this.interval = setInterval(this.fetchData, 10000)
-  },
-  beforeUnmount() {
-    clearInterval(this.interval)
+<script setup>
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import UserHeader from '../Components/UserHeader.vue';
+
+const balance = ref(0);
+const operations = ref([]);
+const user = ref({ name: '', email: '' });
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+
+let interval = null;
+
+const fetchData = async () => {
+  try {
+    const response = await fetch('/dashboard-data');
+    const data = await response.json();
+
+    user.value = data.user;
+    balance.value = data.balance;
+    operations.value = data.operations;
+  } catch (error) {
+    console.error('Ошибка загрузки данных:', error);
   }
-}
+};
+
+const formatDate = (date) => {
+  return new Date(date).toLocaleString();
+};
+
+onMounted(() => {
+  fetchData();
+  interval = setInterval(fetchData, 10000);
+});
+
+onBeforeUnmount(() => {
+  clearInterval(interval);
+});
 </script>

@@ -1,5 +1,7 @@
 <template>
   <div class="container mt-4">
+    <UserHeader :user="user" :csrfToken="csrfToken" />
+
     <h2>История операций</h2>
 
     <div class="d-flex mb-3 align-items-center">
@@ -30,7 +32,7 @@
           <td>{{ formatDate(operation.created_at) }}</td>
           <td>{{ operation.type === 'credit' ? 'Начисление' : 'Списание' }}</td>
           <td :class="operation.type === 'credit' ? 'text-success' : 'text-danger'">
-            {{ operation.amount.toFixed(2) }}
+            {{ Number(operation.amount).toFixed(2) }}
           </td>
           <td>{{ operation.description }}</td>
         </tr>
@@ -68,22 +70,29 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import axios from 'axios';
+import UserHeader from '../Components/UserHeader.vue';
+
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+axios.defaults.withCredentials = true;
 
 const operations = ref({ data: [], meta: {}, links: {} });
+const user = ref({ name: '', email: '' });
 const search = ref('');
 const sortOrder = ref('desc');
 const currentPage = ref(1);
 
 const fetchOperations = async (page = 1) => {
   try {
-    const response = await axios.get('/api/operations', {
+    const response = await axios.get('/history-data', {
       params: {
         search: search.value,
         sort: sortOrder.value,
         page,
       },
     });
-    operations.value = response.data;
+    operations.value = response.data.operations;
+    user.value = response.data.user;
     currentPage.value = page;
   } catch (error) {
     console.error('Ошибка загрузки операций:', error);
