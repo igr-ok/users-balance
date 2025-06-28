@@ -14,7 +14,7 @@ class CreateUser extends Command
      *
      * @var string
      */
-    //protected $signature = 'app:create-user';
+    
     protected $signature = 'user:create {name} {email} {password}';    
 
     /**
@@ -22,7 +22,7 @@ class CreateUser extends Command
      *
      * @var string
      */
-    //protected $description = 'Command description';
+    
     protected $description = 'Создать нового пользователя';
 
     /**

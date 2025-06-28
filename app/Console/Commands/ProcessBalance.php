@@ -5,8 +5,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use App\Models\User;
 use App\Models\Balance;
-use App\Models\Operation;
-use Illuminate\Support\Facades\DB;
+
 
 class ProcessBalance extends Command
 {
@@ -15,7 +14,7 @@ class ProcessBalance extends Command
      *
      * @var string
      */
-    //protected $signature = 'app:process-balance';
+    
     protected $signature = 'balance:process
         {email : Email пользователя} 
         {amount : Сумма, положительная или отрицательная} 
@@ -27,7 +26,7 @@ class ProcessBalance extends Command
      *
      * @var string
      */
-    //protected $description = 'Command description';
+    
     protected $description = 'Начисление или списание с баланса пользователя';
 
     /**
@@ -47,45 +46,26 @@ class ProcessBalance extends Command
             ['amount' => 0]
         );
 
-        $amount = floatval($this->argument('amount'));
-        $description = $this->argument('description');
-        //$type = $amount > 0 ? 'credit' : 'debit';
+        $rawAmount = floatval($this->argument('amount'));
+        $description = $this->argument('description');        
         $isDebit = $this->option('debit');
 
-        if ($amount <= 0) {
+        if ($rawAmount <= 0) {
             $this->error('Сумма должна быть положительной.');
+            return;
+        }        
+
+        $amount = $isDebit ? -$rawAmount : $rawAmount;
+
+        $newAmount = $balance->amount + $amount;
+
+        if ($newAmount < 0) {
+            $this->error("Недостаточно средств. Текущий баланс: {$balance->amount}, требуется: " . abs($amount));
             return;
         }
 
-        $amount = $isDebit ? -$amount : $amount;
-        $type = $isDebit ? 'debit' : 'credit';
+        \App\Jobs\ProcessBalanceJob::dispatch($user->id, $rawAmount, $description, $isDebit);
 
-        DB::beginTransaction();
-
-        try {
-            $newAmount = $balance->amount + $amount;
-
-            if ($newAmount < 0) {
-                $this->error('Недостаточно средств.');
-                DB::rollBack();
-                return;
-            }
-
-            $balance->update(['amount' => $newAmount]);
-
-            Operation::create([
-                'user_id' => $user->id,
-                'type' => $type,
-                'amount' => abs($amount),
-                'description' => $description,
-            ]);
-
-            DB::commit();
-
-            $this->info("Операция '{$type}' выполнена. Новый баланс: {$balance->amount}");
-        } catch (\Exception $e) {
-            DB::rollBack();
-            $this->error("Ошибка: " . $e->getMessage());
-        }
+        $this->info("Операция поставлена в очередь для пользователя {$user->email}.");
     }
 }

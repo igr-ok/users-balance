@@ -39,7 +39,7 @@ const submitForm = async () => {
 
     const response = await axios.post('/api/login', form.value);
     
-    window.location.href = '/dashboard';
+    window.location.href = '/';
   } catch (err) {
     if (err.response?.status === 422) {
       error.value = 'Неверные учетные данные.';
